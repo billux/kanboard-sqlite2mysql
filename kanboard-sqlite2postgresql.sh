@@ -253,9 +253,6 @@ ALTER TABLE projects ADD COLUMN is_everybody_allowed SMALLINT DEFAULT 0;
 ALTER TABLE projects ADD COLUMN default_swimlane VARCHAR(200) DEFAULT 'Default swimlane';
 ALTER TABLE projects ADD COLUMN show_default_swimlane INT DEFAULT 1;
 ALTER TABLE tasks DROP CONSTRAINT tasks_swimlane_id_fkey;
-ALTER TABLE projects ADD COLUMN per_swimlane_task_limits BOOLEAN DEFAULT FALSE;
-ALTER TABLE projects ADD COLUMN task_limit INTEGER DEFAULT 0;
-ALTER TABLE projects ADD COLUMN enable_global_tags BOOLEAN DEFAULT TRUE;
 
 TRUNCATE TABLE settings CASCADE;
 TRUNCATE TABLE users CASCADE;
