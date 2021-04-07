@@ -7,18 +7,18 @@ readonly ARGS="$@"
 usage()
 {
 	cat <<- EOF
-	usage: $PROGNAME <Kanboard instance physical path> [ <MySQL DB name> -h <MySQL DB host> -u <MySQL DB user> -p ] [ --help ]
+	usage: $PROGNAME <Kanboard instance physical path> [ <PostgreSQL DB name> -h <PostgreSQL DB host> -u <PostgreSQL DB user> -p ] [ --help ]
 
-	 -p, --password		MySQL database password. If password is not given it's asked from the tty.
-	 -h, --host		MySQL database host
-	 -u, --user		MySQL database user for login
-	 -o, --output		Path to the output SQL dump compatible with MySQL
+	 -p, --password		PostgreSQL database password. If password is not given it's asked from the tty.
+	 -h, --host		PostgreSQL database host
+	 -u, --user		PostgreSQL database user for login
+	 -o, --output		Path to the output SQL dump compatible with PostgreSQL
 	 -v, --verbose		Enable more verbosity
 	 -H, --help		Display this help
-	 -V, --version		Display the Kanboard SQLite2MySQL version
+	 -V, --version		Display the Kanboard SQLite2PostgreSQL version
 
 	Example:
-	 $PROGNAME /usr/local/share/www/kanboard -o db-mysql.sql
+	 $PROGNAME /usr/local/share/www/kanboard -o db-postgresql.sql
 	 $PROGNAME /usr/local/share/www/kanboard kanboard -u root --password root
 	EOF
 }
@@ -26,8 +26,9 @@ usage()
 version()
 {
 	cat <<- EOF
-	Kanboard SQLite2MySQL 0.0.1
-	Migrate your SQLite Kanboard database to MySQL in one go! By Olivier.
+	Kanboard SQLite2PostgreSQL 0.0.1
+	Migrate your SQLite Kanboard database to PostgreSQL in one go! By Romain
+    Forked from SQLite2MySQL where all major work have been done by Olivier.
 	EOF
 }
 
@@ -38,7 +39,7 @@ cmdline()
   DB_USERNAME=
   DB_PASSWORD=
   DB_NAME=
-  OUTPUT_FILE=db-mysql.sql
+  OUTPUT_FILE=db-postgresql.sql
   IS_VERBOSE=0
   if [ "$#" -lt "1" ]; then
     echo 'error: missing arguments'
@@ -152,7 +153,7 @@ sqlite_dump_table_data()
         | sed -e "s/INSERT INTO \([a-z_\"]*\)/INSERT INTO \1 (${columns})/" -e 's/char(\([0-9]\+\))/CHR(\1)/g'
 }
 
-# If verbose, displays version of the schema found in the SQLite file. Beware this version is different from MySQL schema versions
+# If verbose, displays version of the schema found in the SQLite file. Beware this version is different from PostgreSQL schema versions
 sqlite_dump_schemaversion()
 {
     local sqliteDbFile=$1
@@ -179,7 +180,7 @@ sqlite_dump_data()
     done
 }
 
-createMysqlDump()
+createPostgresqlDump()
 {
     local sqliteDbFile=$1
     
@@ -266,7 +267,7 @@ EOT
 
     sqlite_dump_data ${sqliteDbFile} >> ${OUTPUT_FILE}
 
-    cat <<EOT >> ${OUTPUT}
+    cat <<EOT >> ${OUTPUT_FILE}
 ALTER TABLE users DROP COLUMN is_admin;
 ALTER TABLE users DROP COLUMN default_project_id;
 ALTER TABLE users DROP COLUMN is_project_admin;
@@ -340,7 +341,7 @@ EOT
 
     echo 'ALTER TABLE tasks ADD CONSTRAINT tasks_swimlane_id_fkey FOREIGN KEY (swimlane_id) REFERENCES swimlanes(id) ON DELETE CASCADE;' >> ${OUTPUT_FILE}
 
-    # For MySQL, we need to double the anti-slash (\\ instead of \)
+    # For PostgreSQL, we need to double the anti-slash (\\ instead of \)
     # But we need to take care of Windows URL (e.g. C:\test\) in the JSON of project_activities (e.g. C:\test\" shall not become C:\\test\\" this will break the json...). Windows URL are transformed into Linux URL for this reason
     cat ${OUTPUT_FILE} \
         | sed -e 's/\\\\"/"/g' \
@@ -353,25 +354,25 @@ EOT
         | sed -e 's/\/Kanboard\/Action\//\\\\Kanboard\\\\Action\\\\/g' \
         | sed -e 's/\/r\/n/\\\\n/g' \
         | sed -e 's/\/\//\//g' \
-        > db.mysql
-    mv db.mysql ${OUTPUT_FILE}
+        > db.postgresql
+    mv db.postgresql ${OUTPUT_FILE}
 }
 
-generateMysqlSchema()
+generatePostgresqlSchema()
 {
     mv ${KANBOARD_PATH}/config.php ${KANBOARD_PATH}/config_tmp.php
-    export DATABASE_URL="mysql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOSTNAME}/${DB_NAME}"
+    export DATABASE_URL="postgresql://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOSTNAME}/${DB_NAME}"
     php ${KANBOARD_PATH}/app/common.php
     mv ${KANBOARD_PATH}/config_tmp.php ${KANBOARD_PATH}/config.php
 }
 
-fillMysqlDb()
+fillPostgresqlDb()
 {
     local verbosity=
-    if [ "1" == "${IS_VERBOSE}" ]; then
-        verbosity="--verbose"
+    if [ "1" != "${IS_VERBOSE}" ]; then
+        verbosity="--quiet"
     fi
-    mysql ${verbosity} -h ${DB_HOSTNAME} -u ${DB_USERNAME} --password=${DB_PASSWORD} ${DB_NAME} \
+    PGPASSWORD=${DB_PASSWORD} psql ${verbosity} -h ${DB_HOSTNAME} -U ${DB_USERNAME} ${DB_NAME} \
         < ${OUTPUT_FILE}
 }
 
@@ -382,19 +383,19 @@ main()
 
     sqlite_dump_schemaversion ${sqliteDbFile}
     
-    echo '# Create MySQL data dump from SQLite database'
-    createMysqlDump ${sqliteDbFile} \
+    echo '# Create PostgreSQL data dump from SQLite database'
+    createPostgresqlDump ${sqliteDbFile} \
         && (echo "done" ; echo "check ${OUTPUT_FILE}") \
         || (echo 'FAILLURE' ; exit -1)
 
     if [ ! "${DB_NAME}" == "" ]; then
-        echo '# Generate schema in the MySQL database using Kanboard'
-        generateMysqlSchema \
+        echo '# Generate schema in the PostgreSQL database using Kanboard'
+        generatePostgresqlSchema \
             && echo "done" \
             || (echo 'FAILLURE' ; exit -1)
 
-        echo '# Fill the MySQL database with the SQLite database data'
-        fillMysqlDb \
+        echo '# Fill the PostgreSQL database with the SQLite database data'
+        fillPostgresqlDb \
             && echo "done" \
             || (echo 'FAILLURE' ; exit -1)
     fi
