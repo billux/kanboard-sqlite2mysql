@@ -183,41 +183,159 @@ createMysqlDump()
 {
     local sqliteDbFile=$1
     
-    echo "ALTER TABLE users ADD COLUMN is_admin INT DEFAULT 0;
-    ALTER TABLE users ADD COLUMN default_project_id INT DEFAULT 0;
-    ALTER TABLE users ADD COLUMN is_project_admin INT DEFAULT 0;
-    ALTER TABLE tasks ADD COLUMN estimate_duration VARCHAR(255);
-    ALTER TABLE tasks ADD COLUMN actual_duration VARCHAR(255);
-    ALTER TABLE project_has_users ADD COLUMN id INT DEFAULT 0;
-    ALTER TABLE project_has_users ADD COLUMN is_owner INT DEFAULT 0;
-    ALTER TABLE projects ADD COLUMN is_everybody_allowed SMALLINT DEFAULT 0;
-    ALTER TABLE projects ADD COLUMN default_swimlane VARCHAR(200) DEFAULT 'Default swimlane';
-    ALTER TABLE projects ADD COLUMN show_default_swimlane INT DEFAULT 1;
-    ALTER TABLE tasks DROP CONSTRAINT tasks_swimlane_id_fkey;
-    ALTER TABLE projects ADD COLUMN per_swimlane_task_limits BOOLEAN DEFAULT FALSE;
-    ALTER TABLE projects ADD COLUMN task_limit INTEGER DEFAULT 0;
-    ALTER TABLE projects ADD COLUMN enable_global_tags BOOLEAN DEFAULT TRUE;
+    cat <<EOT >> ${OUTPUT_FILE}
+ALTER TABLE task_has_files ALTER is_image DROP DEFAULT;
+ALTER TABLE task_has_files ALTER is_image TYPE int USING 0;
+ALTER TABLE task_has_files ALTER is_image SET DEFAULT 0;
+ALTER TABLE tasks ALTER is_active DROP DEFAULT;
+ALTER TABLE tasks ALTER is_active TYPE int USING 0;
+ALTER TABLE tasks ALTER is_active SET DEFAULT 1;
+ALTER TABLE projects ALTER is_active DROP DEFAULT;
+ALTER TABLE projects ALTER is_active TYPE int USING 0;
+ALTER TABLE projects ALTER is_active SET DEFAULT 1;
+ALTER TABLE users ALTER is_ldap_user DROP DEFAULT;
+ALTER TABLE users ALTER is_ldap_user TYPE int USING 0;
+ALTER TABLE users ALTER is_ldap_user SET DEFAULT 0;
+ALTER TABLE users ALTER notifications_enabled DROP DEFAULT;
+ALTER TABLE users ALTER notifications_enabled TYPE int USING 0;
+ALTER TABLE users ALTER notifications_enabled SET DEFAULT 0;
+ALTER TABLE projects ALTER is_public DROP DEFAULT;
+ALTER TABLE projects ALTER is_public TYPE int USING 0;
+ALTER TABLE projects ALTER is_public SET DEFAULT 0;
+ALTER TABLE projects ALTER is_private DROP DEFAULT;
+ALTER TABLE projects ALTER is_private TYPE int USING 0;
+ALTER TABLE projects ALTER is_private SET DEFAULT 0;
+ALTER TABLE swimlanes ALTER is_active DROP DEFAULT;
+ALTER TABLE swimlanes ALTER is_active TYPE int USING 0;
+ALTER TABLE swimlanes ALTER is_active SET DEFAULT 1;
+ALTER TABLE users ALTER disable_login_form DROP DEFAULT;
+ALTER TABLE users ALTER disable_login_form TYPE int USING 0;
+ALTER TABLE users ALTER disable_login_form SET DEFAULT 0;
+ALTER TABLE users ALTER twofactor_activated DROP DEFAULT;
+ALTER TABLE users ALTER twofactor_activated TYPE int USING 0;
+ALTER TABLE users ALTER twofactor_activated SET DEFAULT 0;
+ALTER TABLE custom_filters ALTER is_shared DROP DEFAULT;
+ALTER TABLE custom_filters ALTER is_shared TYPE int USING 0;
+ALTER TABLE custom_filters ALTER is_shared SET DEFAULT 0;
+ALTER TABLE custom_filters ALTER append DROP DEFAULT;
+ALTER TABLE custom_filters ALTER append TYPE int USING 0;
+ALTER TABLE custom_filters ALTER append SET DEFAULT 0;
+ALTER TABLE password_reset ALTER is_active DROP DEFAULT;
+ALTER TABLE password_reset ALTER is_active TYPE int USING 0;
+ALTER TABLE users ALTER is_active DROP DEFAULT;
+ALTER TABLE users ALTER is_active TYPE int USING 0;
+ALTER TABLE users ALTER is_active SET DEFAULT 1;
+ALTER TABLE project_has_files ALTER is_image DROP DEFAULT;
+ALTER TABLE project_has_files ALTER is_image TYPE int USING 0;
+ALTER TABLE project_has_files ALTER is_image SET DEFAULT 0;
+ALTER TABLE columns ALTER hide_in_dashboard DROP DEFAULT;
+ALTER TABLE columns ALTER hide_in_dashboard TYPE int USING 0;
+ALTER TABLE columns ALTER hide_in_dashboard SET DEFAULT 0;
+ALTER TABLE column_has_move_restrictions ALTER only_assigned DROP DEFAULT;
+ALTER TABLE column_has_move_restrictions ALTER only_assigned TYPE int USING 0;
+ALTER TABLE column_has_move_restrictions ALTER only_assigned SET DEFAULT 0;
+ALTER TABLE projects ALTER per_swimlane_task_limits DROP DEFAULT;
+ALTER TABLE projects ALTER per_swimlane_task_limits TYPE int USING 0;
+ALTER TABLE projects ALTER per_swimlane_task_limits SET DEFAULT 0;
 
-    TRUNCATE TABLE settings CASCADE;
-    TRUNCATE TABLE users CASCADE;
-    TRUNCATE TABLE links CASCADE;
-    TRUNCATE TABLE plugin_schema_versions CASCADE;" >> ${OUTPUT_FILE}
+ALTER TABLE projects ALTER enable_global_tags DROP DEFAULT;
+ALTER TABLE projects ALTER enable_global_tags TYPE int USING 0;
+ALTER TABLE projects ALTER enable_global_tags SET DEFAULT 1;
+ALTER TABLE users ADD COLUMN is_admin INT DEFAULT 0;
+ALTER TABLE users ADD COLUMN default_project_id INT DEFAULT 0;
+ALTER TABLE users ADD COLUMN is_project_admin INT DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN estimate_duration VARCHAR(255);
+ALTER TABLE tasks ADD COLUMN actual_duration VARCHAR(255);
+ALTER TABLE project_has_users ADD COLUMN id INT DEFAULT 0;
+ALTER TABLE project_has_users ADD COLUMN is_owner INT DEFAULT 0;
+ALTER TABLE projects ADD COLUMN is_everybody_allowed SMALLINT DEFAULT 0;
+ALTER TABLE projects ADD COLUMN default_swimlane VARCHAR(200) DEFAULT 'Default swimlane';
+ALTER TABLE projects ADD COLUMN show_default_swimlane INT DEFAULT 1;
+ALTER TABLE tasks DROP CONSTRAINT tasks_swimlane_id_fkey;
+ALTER TABLE projects ADD COLUMN per_swimlane_task_limits BOOLEAN DEFAULT FALSE;
+ALTER TABLE projects ADD COLUMN task_limit INTEGER DEFAULT 0;
+ALTER TABLE projects ADD COLUMN enable_global_tags BOOLEAN DEFAULT TRUE;
+
+TRUNCATE TABLE settings CASCADE;
+TRUNCATE TABLE users CASCADE;
+TRUNCATE TABLE links CASCADE;
+TRUNCATE TABLE plugin_schema_versions CASCADE;
+EOT
     
     echo 'ALTER TABLE "tasks" ALTER "column_id" TYPE INT;' >> ${OUTPUT_FILE}
 
     sqlite_dump_data ${sqliteDbFile} >> ${OUTPUT_FILE}
-    
-    echo 'ALTER TABLE users DROP COLUMN is_admin;
-    ALTER TABLE users DROP COLUMN default_project_id;
-    ALTER TABLE users DROP COLUMN is_project_admin;
-    ALTER TABLE tasks DROP COLUMN estimate_duration;
-    ALTER TABLE tasks DROP COLUMN actual_duration;
-    ALTER TABLE project_has_users DROP COLUMN id;
-    ALTER TABLE project_has_users DROP COLUMN is_owner;
-    ALTER TABLE projects DROP COLUMN is_everybody_allowed;
-    ALTER TABLE projects DROP COLUMN default_swimlane;
-    ALTER TABLE projects DROP COLUMN show_default_swimlane;' >> ${OUTPUT_FILE}
-    
+
+    cat <<EOT >> ${OUTPUT}
+ALTER TABLE users DROP COLUMN is_admin;
+ALTER TABLE users DROP COLUMN default_project_id;
+ALTER TABLE users DROP COLUMN is_project_admin;
+ALTER TABLE tasks DROP COLUMN estimate_duration;
+ALTER TABLE tasks DROP COLUMN actual_duration;
+ALTER TABLE project_has_users DROP COLUMN id;
+ALTER TABLE project_has_users DROP COLUMN is_owner;
+ALTER TABLE projects DROP COLUMN is_everybody_allowed;
+ALTER TABLE projects DROP COLUMN default_swimlane;
+ALTER TABLE projects DROP COLUMN show_default_swimlane;
+
+ALTER TABLE task_has_files ALTER is_image DROP DEFAULT;
+ALTER TABLE task_has_files ALTER is_image TYPE bool USING CASE WHEN is_image=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE task_has_files ALTER is_image SET DEFAULT FALSE;
+ALTER TABLE tasks ALTER is_active DROP DEFAULT;
+ALTER TABLE tasks ALTER is_active TYPE bool USING CASE WHEN is_active=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE tasks ALTER is_active SET DEFAULT TRUE;
+ALTER TABLE projects ALTER is_active DROP DEFAULT;
+ALTER TABLE projects ALTER is_active TYPE bool USING CASE WHEN is_active=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE projects ALTER is_active SET DEFAULT TRUE;
+ALTER TABLE users ALTER is_ldap_user DROP DEFAULT;
+ALTER TABLE users ALTER is_ldap_user TYPE bool USING CASE WHEN is_ldap_user=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE users ALTER is_ldap_user SET DEFAULT FALSE;
+ALTER TABLE users ALTER notifications_enabled DROP DEFAULT;
+ALTER TABLE users ALTER notifications_enabled TYPE bool USING CASE WHEN notifications_enabled=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE users ALTER notifications_enabled SET DEFAULT FALSE;
+ALTER TABLE projects ALTER is_public DROP DEFAULT;
+ALTER TABLE projects ALTER is_public TYPE bool USING CASE WHEN is_public=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE projects ALTER is_public SET DEFAULT FALSE;
+ALTER TABLE projects ALTER is_private DROP DEFAULT;
+ALTER TABLE projects ALTER is_private TYPE bool USING CASE WHEN is_private=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE projects ALTER is_private SET DEFAULT FALSE;
+ALTER TABLE swimlanes ALTER is_active DROP DEFAULT;
+ALTER TABLE swimlanes ALTER is_active TYPE bool USING CASE WHEN is_active=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE swimlanes ALTER is_active SET DEFAULT TRUE;
+ALTER TABLE users ALTER disable_login_form DROP DEFAULT;
+ALTER TABLE users ALTER disable_login_form TYPE bool USING CASE WHEN disable_login_form=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE users ALTER disable_login_form SET DEFAULT FALSE;
+ALTER TABLE users ALTER twofactor_activated DROP DEFAULT;
+ALTER TABLE users ALTER twofactor_activated TYPE bool USING CASE WHEN twofactor_activated=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE users ALTER twofactor_activated SET DEFAULT FALSE;
+ALTER TABLE custom_filters ALTER is_shared DROP DEFAULT;
+ALTER TABLE custom_filters ALTER is_shared TYPE bool USING CASE WHEN is_shared=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE custom_filters ALTER is_shared SET DEFAULT FALSE;
+ALTER TABLE custom_filters ALTER append DROP DEFAULT;
+ALTER TABLE custom_filters ALTER append TYPE bool USING CASE WHEN append=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE custom_filters ALTER append SET DEFAULT FALSE;
+ALTER TABLE password_reset ALTER is_active DROP DEFAULT;
+ALTER TABLE password_reset ALTER is_active TYPE bool USING CASE WHEN is_active=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE users ALTER is_active DROP DEFAULT;
+ALTER TABLE users ALTER is_active TYPE bool USING CASE WHEN is_active=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE users ALTER is_active SET DEFAULT TRUE;
+ALTER TABLE project_has_files ALTER is_image DROP DEFAULT;
+ALTER TABLE project_has_files ALTER is_image TYPE bool USING CASE WHEN is_image=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE project_has_files ALTER is_image SET DEFAULT FALSE;
+ALTER TABLE columns ALTER hide_in_dashboard DROP DEFAULT;
+ALTER TABLE columns ALTER hide_in_dashboard TYPE bool USING CASE WHEN hide_in_dashboard=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE columns ALTER hide_in_dashboard SET DEFAULT FALSE;
+ALTER TABLE column_has_move_restrictions ALTER only_assigned DROP DEFAULT;
+ALTER TABLE column_has_move_restrictions ALTER only_assigned TYPE bool USING CASE WHEN only_assigned=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE column_has_move_restrictions ALTER only_assigned SET DEFAULT FALSE;
+ALTER TABLE projects ALTER per_swimlane_task_limits DROP DEFAULT;
+ALTER TABLE projects ALTER per_swimlane_task_limits TYPE bool USING CASE WHEN per_swimlane_task_limits=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE projects ALTER per_swimlane_task_limits SET DEFAULT FALSE;
+ALTER TABLE projects ALTER enable_global_tags DROP DEFAULT;
+ALTER TABLE projects ALTER enable_global_tags TYPE bool USING CASE WHEN enable_global_tags=0 THEN FALSE ELSE TRUE END;
+ALTER TABLE projects ALTER enable_global_tags SET DEFAULT TRUE;
+EOT
+
     #echo 'ALTER TABLE `tasks` CHANGE `column_id` `column_id` INT( 11 ) NOT NULL;' >> ${OUTPUT_FILE}
 
     echo 'ALTER TABLE tasks ADD CONSTRAINT tasks_swimlane_id_fkey FOREIGN KEY (swimlane_id) REFERENCES swimlanes(id) ON DELETE CASCADE;' >> ${OUTPUT_FILE}
