@@ -183,26 +183,27 @@ createMysqlDump()
 {
     local sqliteDbFile=$1
     
-    echo 'ALTER TABLE users ADD COLUMN is_admin INT DEFAULT 0;
+    echo "ALTER TABLE users ADD COLUMN is_admin INT DEFAULT 0;
     ALTER TABLE users ADD COLUMN default_project_id INT DEFAULT 0;
     ALTER TABLE users ADD COLUMN is_project_admin INT DEFAULT 0;
-    ALTER TABLE tasks ADD COLUMN estimate_duration VARCHAR(255) DEFAULT "";
-    ALTER TABLE tasks ADD COLUMN actual_duration VARCHAR(255) DEFAULT "";
+    ALTER TABLE tasks ADD COLUMN estimate_duration VARCHAR(255);
+    ALTER TABLE tasks ADD COLUMN actual_duration VARCHAR(255);
     ALTER TABLE project_has_users ADD COLUMN id INT DEFAULT 0;
     ALTER TABLE project_has_users ADD COLUMN is_owner INT DEFAULT 0;
-    ALTER TABLE projects ADD COLUMN is_everybody_allowed TINYINT(1) DEFAULT 0;
-    ALTER TABLE projects ADD COLUMN default_swimlane VARCHAR(200) DEFAULT "Default swimlane";
+    ALTER TABLE projects ADD COLUMN is_everybody_allowed SMALLINT DEFAULT 0;
+    ALTER TABLE projects ADD COLUMN default_swimlane VARCHAR(200) DEFAULT 'Default swimlane';
     ALTER TABLE projects ADD COLUMN show_default_swimlane INT DEFAULT 1;
-    ALTER TABLE tasks DROP FOREIGN KEY tasks_swimlane_ibfk_1;
+    ALTER TABLE tasks DROP CONSTRAINT tasks_swimlane_id_fkey;
+    ALTER TABLE projects ADD COLUMN per_swimlane_task_limits BOOLEAN DEFAULT FALSE;
+    ALTER TABLE projects ADD COLUMN task_limit INTEGER DEFAULT 0;
+    ALTER TABLE projects ADD COLUMN enable_global_tags BOOLEAN DEFAULT TRUE;
 
-    SET FOREIGN_KEY_CHECKS = 0;
-    TRUNCATE TABLE settings;
-    TRUNCATE TABLE users;
-    TRUNCATE TABLE links;
-    TRUNCATE TABLE plugin_schema_versions;
-    SET FOREIGN_KEY_CHECKS = 1;' > ${OUTPUT_FILE}
+    TRUNCATE TABLE settings CASCADE;
+    TRUNCATE TABLE users CASCADE;
+    TRUNCATE TABLE links CASCADE;
+    TRUNCATE TABLE plugin_schema_versions CASCADE;" >> ${OUTPUT_FILE}
     
-    echo 'ALTER TABLE `tasks` CHANGE `column_id` `column_id` INT( 11 ) NULL;' >> ${OUTPUT_FILE}
+    echo 'ALTER TABLE "tasks" ALTER "column_id" TYPE INT;' >> ${OUTPUT_FILE}
 
     sqlite_dump_data ${sqliteDbFile} >> ${OUTPUT_FILE}
     
@@ -219,7 +220,7 @@ createMysqlDump()
     
     #echo 'ALTER TABLE `tasks` CHANGE `column_id` `column_id` INT( 11 ) NOT NULL;' >> ${OUTPUT_FILE}
 
-    echo 'ALTER TABLE tasks ADD CONSTRAINT tasks_swimlane_ibfk_1 FOREIGN KEY (swimlane_id) REFERENCES swimlanes(id) ON DELETE CASCADE;' >> ${OUTPUT_FILE}
+    echo 'ALTER TABLE tasks ADD CONSTRAINT tasks_swimlane_id_fkey FOREIGN KEY (swimlane_id) REFERENCES swimlanes(id) ON DELETE CASCADE;' >> ${OUTPUT_FILE}
 
     # For MySQL, we need to double the anti-slash (\\ instead of \)
     # But we need to take care of Windows URL (e.g. C:\test\) in the JSON of project_activities (e.g. C:\test\" shall not become C:\\test\\" this will break the json...). Windows URL are transformed into Linux URL for this reason
