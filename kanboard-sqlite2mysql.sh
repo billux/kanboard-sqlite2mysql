@@ -135,7 +135,7 @@ sqlite_columns()
     local table=$2
     sqlite3 -csv -header ${sqliteDbFile} "select * from ${table};" \
         | head -n 1 \
-        | sed -e 's/,/`,`/g' -e 's/^/`/' -e 's/$/`/'
+        | sed -e 's/,/","/g' -e 's/^/"/' -e 's/$/"/'
 }
 
 # Generate "INSERT INTO" queries to dump data of an SQLite table
