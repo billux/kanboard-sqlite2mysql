@@ -348,7 +348,8 @@ EOT
         | sed -e 's/\\/\//g' \
         | sed -e 's/##"/\\\\"/g' \
         | sed -e 's/##u\([[:xdigit:]][[:xdigit:]][[:xdigit:]][[:xdigit:]]\)/\\u\1/g' \
-        | sed -e 's/\/Kanboard\/Action\//\\\\Kanboard\\\\Action\\\\/g' \
+        | sed -e 's/\/Kanboard\/Action\//\\Kanboard\\Action\\/g' \
+        | sed -e 's/\/Kanboard\/Plugin\/SendEmailCreator\/Action\//\\Kanboard\\Plugin\\SendEmailCreator\\Action\\/g' \
         | sed -e 's/\/r\/n/\\\\n/g' \
         | sed -e 's/\/\//\//g' \
         > db.postgresql
@@ -369,7 +370,7 @@ fillPostgresqlDb()
     if [ "1" != "${IS_VERBOSE}" ]; then
         verbosity="--quiet"
     fi
-    PGPASSWORD=${DB_PASSWORD} psql ${verbosity} -h ${DB_HOSTNAME} -U ${DB_USERNAME} ${DB_NAME} \
+    PGPASSWORD=${DB_PASSWORD} psql --single-transaction ${verbosity} -h ${DB_HOSTNAME} -U ${DB_USERNAME} ${DB_NAME} \
         < ${OUTPUT_FILE}
 }
 
