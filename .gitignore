@@ -1,5 +1,6 @@
 *.zip
 *.log
 *.sql
+!/reset-sequences.sql
 *.un~
 .fuse*
